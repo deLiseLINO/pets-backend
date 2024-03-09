@@ -1,0 +1,72 @@
+run:
+  concurrency: 5
+  issues-exit-code: 1
+  tests: true
+  allow-parallel-runners: true
+  skip-files:
+    - ".*\\_test\\.go$"
+
+linters:
+  enable-all: true
+  disable:
+    - tagalign
+    - nlreturn
+    - depguard
+    - gochecknoinits
+    - golint
+    - interfacer
+    - maligned
+    - paralleltest
+    - scopelint
+    - tagliatelle
+    - testpackage
+    - godot
+    - structcheck
+    - nosnakecase
+    - varcheck
+    - deadcode
+    - rowserrcheck
+    - sqlclosecheck
+    - dupl
+    - exhaustivestruct
+    - forbidigo
+    - funlen
+    - gci
+    - gochecknoglobals
+    - godox
+    - ifshort
+    - thelper
+    - wastedassign
+    - wrapcheck
+    - wsl
+    - containedctx
+    - ireturn
+    - varnamelen
+    - nonamedreturns
+    - exhaustruct
+    - gofumpt
+
+linters-settings:
+  cyclop:
+    max-complexity: 10
+    skip-tests: true
+  gosec:
+    excludes:
+      - G401
+      - G505
+  misspell:
+    ignore-words:
+      - sub_payed
+  whitespace:
+    multi-if: true
+    multi-func: false
+  lll:
+    line-length: 120
+  staticcheck:
+    checks:
+      - all
+      - '-ST1003'
+
+issues:
+  exclude:
+    - ".*underscore.? in package name.?"

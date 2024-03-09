@@ -1,0 +1,17 @@
+database:
+  address: 127.0.0.1:5432
+  username: postgres
+  password: postgres
+  database: pets_backend
+
+http_server:
+  host: 127.0.0.1
+  port: 8080
+  shutdown_timeout: 5
+  read_timeout: 10
+  write_timeout: 10
+  release: false
+
+logger:
+  output: stdout
+  level: 5
