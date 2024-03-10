@@ -8,13 +8,15 @@ import (
 	"syscall"
 	"time"
 
+	"pets-backend/internal/handler/login"
+	"pets-backend/internal/services"
 	"pets-backend/pkg/httpserver"
 
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 )
 
-func (app *App) initRouter() http.Handler {
+func (app *App) initRouter(optSvc *services.OtpService) http.Handler {
 	router := gin.New()
 
 	gin.DebugPrintRouteFunc = func(httpMethod, absolutePath, handlerName string, nuHandlers int) {
@@ -26,7 +28,8 @@ func (app *App) initRouter() http.Handler {
 		}).Debug()
 	}
 
-	router.Use()
+	router.POST("/login/otp_generate", login.HandleGenerateOtp(optSvc))
+	router.POST("/login/by_code", login.HandleByCode(optSvc))
 
 	return router
 }

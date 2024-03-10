@@ -8,6 +8,20 @@ import (
 )
 
 var (
+	// OtpCodesColumns holds the columns for the "otp_codes" table.
+	OtpCodesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "code", Type: field.TypeString},
+		{Name: "email", Type: field.TypeString},
+		{Name: "next_send_time", Type: field.TypeTime},
+		{Name: "exparation_time", Type: field.TypeTime},
+	}
+	// OtpCodesTable holds the schema information for the "otp_codes" table.
+	OtpCodesTable = &schema.Table{
+		Name:       "otp_codes",
+		Columns:    OtpCodesColumns,
+		PrimaryKey: []*schema.Column{OtpCodesColumns[0]},
+	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -20,6 +34,7 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		OtpCodesTable,
 		UsersTable,
 	}
 )

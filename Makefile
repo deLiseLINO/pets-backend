@@ -3,3 +3,6 @@ run:
 
 lint:
 	golangci-lint run ./...
+
+ent-gen:
+	go run -mod=mod entgo.io/ent/cmd/ent generate --feature sql/lock,sql/upsert ./internal/ent/schema

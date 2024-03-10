@@ -15,3 +15,12 @@ http_server:
 logger:
   output: stdout
   level: 5
+
+smtp:
+  user: example@gmail.com
+  password: app_pass
+  host: smtp.gmail.com
+  port: 587
+  otp_length: 4
+  next_send_period_sec: 60
+  exparation_time_min: 60

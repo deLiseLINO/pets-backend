@@ -11,11 +11,13 @@ import (
 
 	"pets-backend/internal/ent/migrate"
 
+	"pets-backend/internal/ent/otpcodes"
 	"pets-backend/internal/ent/user"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
+	"github.com/google/uuid"
 )
 
 // Client is the client that holds all ent builders.
@@ -23,6 +25,8 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// OtpCodes is the client for interacting with the OtpCodes builders.
+	OtpCodes *OtpCodesClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 }
@@ -36,6 +40,7 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.OtpCodes = NewOtpCodesClient(c.config)
 	c.User = NewUserClient(c.config)
 }
 
@@ -127,9 +132,10 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:    ctx,
-		config: cfg,
-		User:   NewUserClient(cfg),
+		ctx:      ctx,
+		config:   cfg,
+		OtpCodes: NewOtpCodesClient(cfg),
+		User:     NewUserClient(cfg),
 	}, nil
 }
 
@@ -147,16 +153,17 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:    ctx,
-		config: cfg,
-		User:   NewUserClient(cfg),
+		ctx:      ctx,
+		config:   cfg,
+		OtpCodes: NewOtpCodesClient(cfg),
+		User:     NewUserClient(cfg),
 	}, nil
 }
 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		User.
+//		OtpCodes.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -178,22 +185,159 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
+	c.OtpCodes.Use(hooks...)
 	c.User.Use(hooks...)
 }
 
 // Intercept adds the query interceptors to all the entity clients.
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
+	c.OtpCodes.Intercept(interceptors...)
 	c.User.Intercept(interceptors...)
 }
 
 // Mutate implements the ent.Mutator interface.
 func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
+	case *OtpCodesMutation:
+		return c.OtpCodes.mutate(ctx, m)
 	case *UserMutation:
 		return c.User.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
+	}
+}
+
+// OtpCodesClient is a client for the OtpCodes schema.
+type OtpCodesClient struct {
+	config
+}
+
+// NewOtpCodesClient returns a client for the OtpCodes from the given config.
+func NewOtpCodesClient(c config) *OtpCodesClient {
+	return &OtpCodesClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `otpcodes.Hooks(f(g(h())))`.
+func (c *OtpCodesClient) Use(hooks ...Hook) {
+	c.hooks.OtpCodes = append(c.hooks.OtpCodes, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `otpcodes.Intercept(f(g(h())))`.
+func (c *OtpCodesClient) Intercept(interceptors ...Interceptor) {
+	c.inters.OtpCodes = append(c.inters.OtpCodes, interceptors...)
+}
+
+// Create returns a builder for creating a OtpCodes entity.
+func (c *OtpCodesClient) Create() *OtpCodesCreate {
+	mutation := newOtpCodesMutation(c.config, OpCreate)
+	return &OtpCodesCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of OtpCodes entities.
+func (c *OtpCodesClient) CreateBulk(builders ...*OtpCodesCreate) *OtpCodesCreateBulk {
+	return &OtpCodesCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *OtpCodesClient) MapCreateBulk(slice any, setFunc func(*OtpCodesCreate, int)) *OtpCodesCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &OtpCodesCreateBulk{err: fmt.Errorf("calling to OtpCodesClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*OtpCodesCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &OtpCodesCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for OtpCodes.
+func (c *OtpCodesClient) Update() *OtpCodesUpdate {
+	mutation := newOtpCodesMutation(c.config, OpUpdate)
+	return &OtpCodesUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *OtpCodesClient) UpdateOne(oc *OtpCodes) *OtpCodesUpdateOne {
+	mutation := newOtpCodesMutation(c.config, OpUpdateOne, withOtpCodes(oc))
+	return &OtpCodesUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *OtpCodesClient) UpdateOneID(id uuid.UUID) *OtpCodesUpdateOne {
+	mutation := newOtpCodesMutation(c.config, OpUpdateOne, withOtpCodesID(id))
+	return &OtpCodesUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for OtpCodes.
+func (c *OtpCodesClient) Delete() *OtpCodesDelete {
+	mutation := newOtpCodesMutation(c.config, OpDelete)
+	return &OtpCodesDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *OtpCodesClient) DeleteOne(oc *OtpCodes) *OtpCodesDeleteOne {
+	return c.DeleteOneID(oc.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *OtpCodesClient) DeleteOneID(id uuid.UUID) *OtpCodesDeleteOne {
+	builder := c.Delete().Where(otpcodes.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &OtpCodesDeleteOne{builder}
+}
+
+// Query returns a query builder for OtpCodes.
+func (c *OtpCodesClient) Query() *OtpCodesQuery {
+	return &OtpCodesQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeOtpCodes},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a OtpCodes entity by its id.
+func (c *OtpCodesClient) Get(ctx context.Context, id uuid.UUID) (*OtpCodes, error) {
+	return c.Query().Where(otpcodes.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *OtpCodesClient) GetX(ctx context.Context, id uuid.UUID) *OtpCodes {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *OtpCodesClient) Hooks() []Hook {
+	return c.hooks.OtpCodes
+}
+
+// Interceptors returns the client interceptors.
+func (c *OtpCodesClient) Interceptors() []Interceptor {
+	return c.inters.OtpCodes
+}
+
+func (c *OtpCodesClient) mutate(ctx context.Context, m *OtpCodesMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&OtpCodesCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&OtpCodesUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&OtpCodesUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&OtpCodesDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown OtpCodes mutation op: %q", m.Op())
 	}
 }
 
@@ -333,9 +477,9 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		User []ent.Hook
+		OtpCodes, User []ent.Hook
 	}
 	inters struct {
-		User []ent.Interceptor
+		OtpCodes, User []ent.Interceptor
 	}
 )

@@ -13,6 +13,7 @@ type Config struct {
 	Database   Database   `yaml:"database" validate:"required"`
 	HTTPServer HTTPServer `yaml:"http_server" validate:"required"`
 	Logger     Logger     `yaml:"logger" validate:"required"`
+	SMTP       SMTP       `yaml:"smtp" validate:"required"`
 }
 
 const (
