@@ -8,3 +8,7 @@ import (
 func (app *App) initOtpStorage(client *ent.Client) *postgres.OtpStorage {
 	return postgres.NewOtpStorage(client)
 }
+
+func (app *App) initUserStorage(client *ent.Client) *postgres.UserStorage {
+	return postgres.NewUserStorage(client)
+}

@@ -16,7 +16,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func (app *App) initRouter(optSvc *services.OtpService) http.Handler {
+func (app *App) initRouter(optSvc *services.OtpService, userSvc *services.UserService) http.Handler {
 	router := gin.New()
 
 	gin.DebugPrintRouteFunc = func(httpMethod, absolutePath, handlerName string, nuHandlers int) {
@@ -29,7 +29,7 @@ func (app *App) initRouter(optSvc *services.OtpService) http.Handler {
 	}
 
 	router.POST("/login/otp_generate", login.HandleGenerateOtp(optSvc))
-	router.POST("/login/by_code", login.HandleByCode(optSvc))
+	router.POST("/login/by_code", login.HandleByCode(optSvc, userSvc))
 
 	return router
 }

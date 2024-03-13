@@ -18,3 +18,7 @@ func (app *App) initOtpSender(cfg config.SMTP, otpStorage *postgres.OtpStorage) 
 		cfg.ExparationTimeMin,
 	)
 }
+
+func (app *App) initUserService(userStorage *postgres.UserStorage) *services.UserService {
+	return services.NewUserService(userStorage)
+}

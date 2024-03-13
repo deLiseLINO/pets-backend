@@ -27,6 +27,48 @@ func (uu *UserUpdate) Where(ps ...predicate.User) *UserUpdate {
 	return uu
 }
 
+// SetEmail sets the "email" field.
+func (uu *UserUpdate) SetEmail(s string) *UserUpdate {
+	uu.mutation.SetEmail(s)
+	return uu
+}
+
+// SetNillableEmail sets the "email" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableEmail(s *string) *UserUpdate {
+	if s != nil {
+		uu.SetEmail(*s)
+	}
+	return uu
+}
+
+// SetUniqueName sets the "unique_name" field.
+func (uu *UserUpdate) SetUniqueName(s string) *UserUpdate {
+	uu.mutation.SetUniqueName(s)
+	return uu
+}
+
+// SetNillableUniqueName sets the "unique_name" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableUniqueName(s *string) *UserUpdate {
+	if s != nil {
+		uu.SetUniqueName(*s)
+	}
+	return uu
+}
+
+// SetName sets the "name" field.
+func (uu *UserUpdate) SetName(s string) *UserUpdate {
+	uu.mutation.SetName(s)
+	return uu
+}
+
+// SetNillableName sets the "name" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableName(s *string) *UserUpdate {
+	if s != nil {
+		uu.SetName(*s)
+	}
+	return uu
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uu *UserUpdate) Mutation() *UserMutation {
 	return uu.mutation
@@ -60,13 +102,22 @@ func (uu *UserUpdate) ExecX(ctx context.Context) {
 }
 
 func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	_spec := sqlgraph.NewUpdateSpec(user.Table, user.Columns, sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewUpdateSpec(user.Table, user.Columns, sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID))
 	if ps := uu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := uu.mutation.Email(); ok {
+		_spec.SetField(user.FieldEmail, field.TypeString, value)
+	}
+	if value, ok := uu.mutation.UniqueName(); ok {
+		_spec.SetField(user.FieldUniqueName, field.TypeString, value)
+	}
+	if value, ok := uu.mutation.Name(); ok {
+		_spec.SetField(user.FieldName, field.TypeString, value)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, uu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -86,6 +137,48 @@ type UserUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *UserMutation
+}
+
+// SetEmail sets the "email" field.
+func (uuo *UserUpdateOne) SetEmail(s string) *UserUpdateOne {
+	uuo.mutation.SetEmail(s)
+	return uuo
+}
+
+// SetNillableEmail sets the "email" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableEmail(s *string) *UserUpdateOne {
+	if s != nil {
+		uuo.SetEmail(*s)
+	}
+	return uuo
+}
+
+// SetUniqueName sets the "unique_name" field.
+func (uuo *UserUpdateOne) SetUniqueName(s string) *UserUpdateOne {
+	uuo.mutation.SetUniqueName(s)
+	return uuo
+}
+
+// SetNillableUniqueName sets the "unique_name" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableUniqueName(s *string) *UserUpdateOne {
+	if s != nil {
+		uuo.SetUniqueName(*s)
+	}
+	return uuo
+}
+
+// SetName sets the "name" field.
+func (uuo *UserUpdateOne) SetName(s string) *UserUpdateOne {
+	uuo.mutation.SetName(s)
+	return uuo
+}
+
+// SetNillableName sets the "name" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableName(s *string) *UserUpdateOne {
+	if s != nil {
+		uuo.SetName(*s)
+	}
+	return uuo
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -134,7 +227,7 @@ func (uuo *UserUpdateOne) ExecX(ctx context.Context) {
 }
 
 func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
-	_spec := sqlgraph.NewUpdateSpec(user.Table, user.Columns, sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt))
+	_spec := sqlgraph.NewUpdateSpec(user.Table, user.Columns, sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID))
 	id, ok := uuo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "User.id" for update`)}
@@ -158,6 +251,15 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := uuo.mutation.Email(); ok {
+		_spec.SetField(user.FieldEmail, field.TypeString, value)
+	}
+	if value, ok := uuo.mutation.UniqueName(); ok {
+		_spec.SetField(user.FieldUniqueName, field.TypeString, value)
+	}
+	if value, ok := uuo.mutation.Name(); ok {
+		_spec.SetField(user.FieldName, field.TypeString, value)
 	}
 	_node = &User{config: uuo.config}
 	_spec.Assign = _node.assignValues

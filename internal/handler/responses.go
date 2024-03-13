@@ -1,9 +1,15 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+)
+
+var (
+	ErrWrongCodeOrEmail = errors.New("wrong code or email")
+	ErrInternalServer   = errors.New(http.StatusText(http.StatusInternalServerError))
 )
 
 type APIResponse[T any] struct {
@@ -36,6 +42,6 @@ func BadRequestResponse(c *gin.Context, err error) {
 	ErrorResponse(c, http.StatusBadRequest, err)
 }
 
-func InternalErrorResponse(c *gin.Context, err error) {
-	ErrorResponse(c, http.StatusInternalServerError, err)
+func InternalErrorResponse(c *gin.Context) {
+	ErrorResponse(c, http.StatusInternalServerError, ErrInternalServer)
 }

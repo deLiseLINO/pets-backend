@@ -43,13 +43,18 @@ func (s *OtpStorage) GetByEmail(
 	ctx context.Context,
 	email string,
 ) (*models.OTP, error) {
-	// TODO: add exparation check
 	otp, err := s.client.OtpCodes.
 		Query().
-		Where(otpcodes.Email(email)).
+		Where(
+			otpcodes.Email(email),
+			otpcodes.ExparationTimeGT(time.Now()),
+		).
 		Order((ent.Desc("exparation_time"))).
 		First(ctx)
 	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, models.ErrOTPNotFound
+		}
 		return nil, err
 	}
 	return otpToModel(otp), err

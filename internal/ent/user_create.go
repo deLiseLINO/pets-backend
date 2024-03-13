@@ -8,9 +8,11 @@ import (
 	"fmt"
 	"pets-backend/internal/ent/user"
 
+	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/google/uuid"
 )
 
 // UserCreate is the builder for creating a User entity.
@@ -19,6 +21,30 @@ type UserCreate struct {
 	mutation *UserMutation
 	hooks    []Hook
 	conflict []sql.ConflictOption
+}
+
+// SetEmail sets the "email" field.
+func (uc *UserCreate) SetEmail(s string) *UserCreate {
+	uc.mutation.SetEmail(s)
+	return uc
+}
+
+// SetUniqueName sets the "unique_name" field.
+func (uc *UserCreate) SetUniqueName(s string) *UserCreate {
+	uc.mutation.SetUniqueName(s)
+	return uc
+}
+
+// SetName sets the "name" field.
+func (uc *UserCreate) SetName(s string) *UserCreate {
+	uc.mutation.SetName(s)
+	return uc
+}
+
+// SetID sets the "id" field.
+func (uc *UserCreate) SetID(u uuid.UUID) *UserCreate {
+	uc.mutation.SetID(u)
+	return uc
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -55,6 +81,15 @@ func (uc *UserCreate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (uc *UserCreate) check() error {
+	if _, ok := uc.mutation.Email(); !ok {
+		return &ValidationError{Name: "email", err: errors.New(`ent: missing required field "User.email"`)}
+	}
+	if _, ok := uc.mutation.UniqueName(); !ok {
+		return &ValidationError{Name: "unique_name", err: errors.New(`ent: missing required field "User.unique_name"`)}
+	}
+	if _, ok := uc.mutation.Name(); !ok {
+		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "User.name"`)}
+	}
 	return nil
 }
 
@@ -69,8 +104,13 @@ func (uc *UserCreate) sqlSave(ctx context.Context) (*User, error) {
 		}
 		return nil, err
 	}
-	id := _spec.ID.Value.(int64)
-	_node.ID = int(id)
+	if _spec.ID.Value != nil {
+		if id, ok := _spec.ID.Value.(*uuid.UUID); ok {
+			_node.ID = *id
+		} else if err := _node.ID.Scan(_spec.ID.Value); err != nil {
+			return nil, err
+		}
+	}
 	uc.mutation.id = &_node.ID
 	uc.mutation.done = true
 	return _node, nil
@@ -79,9 +119,25 @@ func (uc *UserCreate) sqlSave(ctx context.Context) (*User, error) {
 func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	var (
 		_node = &User{config: uc.config}
-		_spec = sqlgraph.NewCreateSpec(user.Table, sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt))
+		_spec = sqlgraph.NewCreateSpec(user.Table, sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID))
 	)
 	_spec.OnConflict = uc.conflict
+	if id, ok := uc.mutation.ID(); ok {
+		_node.ID = id
+		_spec.ID.Value = &id
+	}
+	if value, ok := uc.mutation.Email(); ok {
+		_spec.SetField(user.FieldEmail, field.TypeString, value)
+		_node.Email = value
+	}
+	if value, ok := uc.mutation.UniqueName(); ok {
+		_spec.SetField(user.FieldUniqueName, field.TypeString, value)
+		_node.UniqueName = value
+	}
+	if value, ok := uc.mutation.Name(); ok {
+		_spec.SetField(user.FieldName, field.TypeString, value)
+		_node.Name = value
+	}
 	return _node, _spec
 }
 
@@ -89,11 +145,17 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 // of the `INSERT` statement. For example:
 //
 //	client.User.Create().
+//		SetEmail(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
 //			sql.ResolveWithNewValues(),
 //		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.UserUpsert) {
+//			SetEmail(v+v).
+//		}).
 //		Exec(ctx)
 func (uc *UserCreate) OnConflict(opts ...sql.ConflictOption) *UserUpsertOne {
 	uc.conflict = opts
@@ -128,16 +190,60 @@ type (
 	}
 )
 
-// UpdateNewValues updates the mutable fields using the new values that were set on create.
+// SetEmail sets the "email" field.
+func (u *UserUpsert) SetEmail(v string) *UserUpsert {
+	u.Set(user.FieldEmail, v)
+	return u
+}
+
+// UpdateEmail sets the "email" field to the value that was provided on create.
+func (u *UserUpsert) UpdateEmail() *UserUpsert {
+	u.SetExcluded(user.FieldEmail)
+	return u
+}
+
+// SetUniqueName sets the "unique_name" field.
+func (u *UserUpsert) SetUniqueName(v string) *UserUpsert {
+	u.Set(user.FieldUniqueName, v)
+	return u
+}
+
+// UpdateUniqueName sets the "unique_name" field to the value that was provided on create.
+func (u *UserUpsert) UpdateUniqueName() *UserUpsert {
+	u.SetExcluded(user.FieldUniqueName)
+	return u
+}
+
+// SetName sets the "name" field.
+func (u *UserUpsert) SetName(v string) *UserUpsert {
+	u.Set(user.FieldName, v)
+	return u
+}
+
+// UpdateName sets the "name" field to the value that was provided on create.
+func (u *UserUpsert) UpdateName() *UserUpsert {
+	u.SetExcluded(user.FieldName)
+	return u
+}
+
+// UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
 //	client.User.Create().
 //		OnConflict(
 //			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(user.FieldID)
+//			}),
 //		).
 //		Exec(ctx)
 func (u *UserUpsertOne) UpdateNewValues() *UserUpsertOne {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		if _, exists := u.create.mutation.ID(); exists {
+			s.SetIgnore(user.FieldID)
+		}
+	}))
 	return u
 }
 
@@ -168,6 +274,48 @@ func (u *UserUpsertOne) Update(set func(*UserUpsert)) *UserUpsertOne {
 	return u
 }
 
+// SetEmail sets the "email" field.
+func (u *UserUpsertOne) SetEmail(v string) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetEmail(v)
+	})
+}
+
+// UpdateEmail sets the "email" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateEmail() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateEmail()
+	})
+}
+
+// SetUniqueName sets the "unique_name" field.
+func (u *UserUpsertOne) SetUniqueName(v string) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetUniqueName(v)
+	})
+}
+
+// UpdateUniqueName sets the "unique_name" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateUniqueName() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateUniqueName()
+	})
+}
+
+// SetName sets the "name" field.
+func (u *UserUpsertOne) SetName(v string) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetName(v)
+	})
+}
+
+// UpdateName sets the "name" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateName() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateName()
+	})
+}
+
 // Exec executes the query.
 func (u *UserUpsertOne) Exec(ctx context.Context) error {
 	if len(u.create.conflict) == 0 {
@@ -184,7 +332,12 @@ func (u *UserUpsertOne) ExecX(ctx context.Context) {
 }
 
 // Exec executes the UPSERT query and returns the inserted/updated ID.
-func (u *UserUpsertOne) ID(ctx context.Context) (id int, err error) {
+func (u *UserUpsertOne) ID(ctx context.Context) (id uuid.UUID, err error) {
+	if u.create.driver.Dialect() == dialect.MySQL {
+		// In case of "ON CONFLICT", there is no way to get back non-numeric ID
+		// fields from the database since MySQL does not support the RETURNING clause.
+		return id, errors.New("ent: UserUpsertOne.ID is not supported by MySQL driver. Use UserUpsertOne.Exec instead")
+	}
 	node, err := u.create.Save(ctx)
 	if err != nil {
 		return id, err
@@ -193,7 +346,7 @@ func (u *UserUpsertOne) ID(ctx context.Context) (id int, err error) {
 }
 
 // IDX is like ID, but panics if an error occurs.
-func (u *UserUpsertOne) IDX(ctx context.Context) int {
+func (u *UserUpsertOne) IDX(ctx context.Context) uuid.UUID {
 	id, err := u.ID(ctx)
 	if err != nil {
 		panic(err)
@@ -247,10 +400,6 @@ func (ucb *UserCreateBulk) Save(ctx context.Context) ([]*User, error) {
 					return nil, err
 				}
 				mutation.id = &nodes[i].ID
-				if specs[i].ID.Value != nil {
-					id := specs[i].ID.Value.(int64)
-					nodes[i].ID = int(id)
-				}
 				mutation.done = true
 				return nodes[i], nil
 			})
@@ -299,6 +448,11 @@ func (ucb *UserCreateBulk) ExecX(ctx context.Context) {
 //			// the was proposed for insertion.
 //			sql.ResolveWithNewValues(),
 //		).
+//		// Override some of the fields with custom
+//		// update values.
+//		Update(func(u *ent.UserUpsert) {
+//			SetEmail(v+v).
+//		}).
 //		Exec(ctx)
 func (ucb *UserCreateBulk) OnConflict(opts ...sql.ConflictOption) *UserUpsertBulk {
 	ucb.conflict = opts
@@ -332,10 +486,20 @@ type UserUpsertBulk struct {
 //	client.User.Create().
 //		OnConflict(
 //			sql.ResolveWithNewValues(),
+//			sql.ResolveWith(func(u *sql.UpdateSet) {
+//				u.SetIgnore(user.FieldID)
+//			}),
 //		).
 //		Exec(ctx)
 func (u *UserUpsertBulk) UpdateNewValues() *UserUpsertBulk {
 	u.create.conflict = append(u.create.conflict, sql.ResolveWithNewValues())
+	u.create.conflict = append(u.create.conflict, sql.ResolveWith(func(s *sql.UpdateSet) {
+		for _, b := range u.create.builders {
+			if _, exists := b.mutation.ID(); exists {
+				s.SetIgnore(user.FieldID)
+			}
+		}
+	}))
 	return u
 }
 
@@ -364,6 +528,48 @@ func (u *UserUpsertBulk) Update(set func(*UserUpsert)) *UserUpsertBulk {
 		set(&UserUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetEmail sets the "email" field.
+func (u *UserUpsertBulk) SetEmail(v string) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetEmail(v)
+	})
+}
+
+// UpdateEmail sets the "email" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateEmail() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateEmail()
+	})
+}
+
+// SetUniqueName sets the "unique_name" field.
+func (u *UserUpsertBulk) SetUniqueName(v string) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetUniqueName(v)
+	})
+}
+
+// UpdateUniqueName sets the "unique_name" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateUniqueName() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateUniqueName()
+	})
+}
+
+// SetName sets the "name" field.
+func (u *UserUpsertBulk) SetName(v string) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetName(v)
+	})
+}
+
+// UpdateName sets the "name" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateName() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateName()
+	})
 }
 
 // Exec executes the query.

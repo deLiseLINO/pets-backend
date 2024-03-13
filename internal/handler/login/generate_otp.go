@@ -26,10 +26,9 @@ type GenerateOtpRequest struct {
 }
 
 type GenerateOtpResponse struct {
-	Success        bool   `json:"success"`
-	Sticker        string `json:"sticker"`
-	NextSendTime   Time   `json:"next_send_time"`
-	ExparationTime Time   `json:"exparation_time"`
+	Success        bool `json:"success"`
+	NextSendTime   Time `json:"next_send_time"`
+	ExparationTime Time `json:"exparation_time"`
 }
 
 type Time struct {
@@ -43,23 +42,26 @@ func HandleGenerateOtp(otpSvc GenerateOtpService) gin.HandlerFunc {
 
 		if err := c.ShouldBindJSON(&request); err != nil {
 			handler.BadRequestResponse(c, err)
+			return
 		}
 
 		otp, err := otpSvc.GenerateOtp()
 		if err != nil {
-			handler.InternalErrorResponse(c, err)
+			handler.InternalErrorResponse(c)
+			return
 		}
 
 		err = otpSvc.SendOtp(request.Email, otp.Code)
 		if err != nil {
-			handler.InternalErrorResponse(c, err)
+			handler.InternalErrorResponse(c)
 			return
 		}
 
 		ctx := c.Request.Context()
 		err = otpSvc.SaveOtp(ctx, otp.Code, request.Email, otp.NextSendTime, otp.ExparationTime)
 		if err != nil {
-			handler.InternalErrorResponse(c, err)
+			handler.InternalErrorResponse(c)
+			return
 		}
 
 		nextSendTimeResponse := Time{

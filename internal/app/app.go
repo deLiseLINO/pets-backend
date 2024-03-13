@@ -19,6 +19,9 @@ func (app *App) Run() {
 	otpStorage := app.initOtpStorage(connection)
 	otpSvc := app.initOtpSender(app.cfg.SMTP, otpStorage)
 
-	router := app.initRouter(otpSvc)
+	userStorage := app.initUserStorage(connection)
+	userSvc := app.initUserService(userStorage)
+
+	router := app.initRouter(otpSvc, userSvc)
 	app.runServer(router)
 }

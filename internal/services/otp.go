@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"crypto/rand"
-	"errors"
 	"net/smtp"
 	"pets-backend/internal/models"
 	"time"
@@ -68,7 +67,7 @@ func (s *OtpService) GenerateOtp() (*models.OTP, error) {
 	}
 
 	nextSendTime := time.Now().Add(time.Second * time.Duration(s.nextSendPeriodSec))
-	exparationTime := time.Now().Add(time.Hour * time.Duration(s.exparationTimeMin))
+	exparationTime := time.Now().Add(time.Minute * time.Duration(s.exparationTimeMin))
 
 	return &models.OTP{
 		Code:           code,
@@ -93,21 +92,17 @@ func (s *OtpService) generateOtp() (string, error) {
 	return string(buffer), nil
 }
 
-func (s *OtpService) VerifyCode(ctx context.Context, email string, otpCode string) (*models.User, error) {
+func (s *OtpService) VerifyCode(ctx context.Context, email string, otpCode string) error {
 	otp, err := s.otpStorage.GetByEmail(ctx, email)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if otpCode != otp.Code {
-		// TODO: wrap error
-		return nil, errors.New("wrond code")
+		return models.ErrMismattchCode
 	}
 
-	// TODO: get user from db
-	return &models.User{
-		UniqueName: "test",
-	}, nil
+	return nil
 }
 
 func (s *OtpService) SendOtp(sendingEmail string, otpCode string) error {

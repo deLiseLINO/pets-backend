@@ -2,6 +2,7 @@ package login
 
 import (
 	"context"
+	"errors"
 	"pets-backend/internal/handler"
 	"pets-backend/internal/models"
 
@@ -9,7 +10,11 @@ import (
 )
 
 type ByCodeOtpService interface {
-	VerifyCode(ctx context.Context, email string, code string) (*models.User, error)
+	VerifyCode(ctx context.Context, email, code string) error
+}
+
+type ByCodeUserService interface {
+	GetByEmail(ctx context.Context, email string) (*models.User, error)
 }
 
 type ByCodeRequest struct {
@@ -18,12 +23,11 @@ type ByCodeRequest struct {
 }
 
 type ByCodeResponse struct {
-	Success  bool   `json:"success"`
 	UserName string `json:"username"`
 	Token    string `json:"token"`
 }
 
-func HandleByCode(otpSvc ByCodeOtpService) gin.HandlerFunc {
+func HandleByCode(otpSvc ByCodeOtpService, userSvc ByCodeUserService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var request ByCodeRequest
 		if err := c.ShouldBindJSON(&request); err != nil {
@@ -31,15 +35,26 @@ func HandleByCode(otpSvc ByCodeOtpService) gin.HandlerFunc {
 		}
 
 		ctx := c.Request.Context()
-		user, err := otpSvc.VerifyCode(ctx, request.Email, request.OtpCode)
+		err := otpSvc.VerifyCode(ctx, request.Email, request.OtpCode)
 		if err != nil {
-			// TODO: register user
-			handler.InternalErrorResponse(c, err)
-			return
+			switch {
+			case errors.Is(err, models.ErrMismattchCode):
+				handler.BadRequestResponse(c, handler.ErrWrongCodeOrEmail)
+				return
+			case errors.Is(err, models.ErrOTPNotFound):
+				handler.BadRequestResponse(c, handler.ErrWrongCodeOrEmail)
+				return
+			default:
+				handler.InternalErrorResponse(c)
+				return
+			}
+		}
+		user, err := userSvc.GetByEmail(ctx, request.Email)
+		if err != nil {
+			handler.InternalErrorResponse(c)
 		}
 
 		handler.SuccessResponse(c, &ByCodeResponse{
-			Success:  true,
 			UserName: user.UniqueName,
 		})
 	}
