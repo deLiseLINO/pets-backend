@@ -22,6 +22,8 @@ func (app *App) Run() {
 	userStorage := app.initUserStorage(connection)
 	userSvc := app.initUserService(userStorage)
 
-	router := app.initRouter(otpSvc, userSvc)
+	ssoSvc := app.initSSOService(app.cfg.SSO)
+
+	router := app.initRouter(otpSvc, userSvc, ssoSvc)
 	app.runServer(router)
 }

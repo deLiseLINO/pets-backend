@@ -24,3 +24,7 @@ smtp:
   otp_length: 4
   next_send_period_sec: 60
   exparation_time_min: 60
+
+sso:
+  token_lifespan_hours: 480
+  secret_key: "some_key"

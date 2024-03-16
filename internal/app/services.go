@@ -22,3 +22,7 @@ func (app *App) initOtpSender(cfg config.SMTP, otpStorage *postgres.OtpStorage) 
 func (app *App) initUserService(userStorage *postgres.UserStorage) *services.UserService {
 	return services.NewUserService(userStorage)
 }
+
+func (app *App) initSSOService(cfg config.SSO) *services.SSOService {
+	return services.NewSSOService(cfg.TokenLifespanHours, cfg.SecretKey)
+}

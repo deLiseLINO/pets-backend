@@ -14,6 +14,7 @@ type Config struct {
 	HTTPServer HTTPServer `yaml:"http_server" validate:"required"`
 	Logger     Logger     `yaml:"logger" validate:"required"`
 	SMTP       SMTP       `yaml:"smtp" validate:"required"`
+	SSO        SSO        `yaml:"SSO" validate:"required"`
 }
 
 const (

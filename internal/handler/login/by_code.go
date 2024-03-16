@@ -17,6 +17,10 @@ type ByCodeUserService interface {
 	GetByEmail(ctx context.Context, email string) (*models.User, error)
 }
 
+type ByCodeSSOService interface {
+	GenerateToken(userID string) (string, error)
+}
+
 type ByCodeRequest struct {
 	Email   string `json:"email" validate:"required"`
 	OtpCode string `json:"otp_code" validate:"required"`
@@ -28,7 +32,7 @@ type ByCodeResponse struct {
 	Token    string `json:"token"`
 }
 
-func HandleByCode(otpSvc ByCodeOtpService, userSvc ByCodeUserService) gin.HandlerFunc {
+func HandleByCode(otpSvc ByCodeOtpService, userSvc ByCodeUserService, ssoSvc ByCodeSSOService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var request ByCodeRequest
 		if err := c.ShouldBindJSON(&request); err != nil {
@@ -63,9 +67,15 @@ func HandleByCode(otpSvc ByCodeOtpService, userSvc ByCodeUserService) gin.Handle
 			}
 		}
 
+		token, err := ssoSvc.GenerateToken(user.ID.String())
+		if err != nil {
+			handler.InternalErrorResponse(c)
+		}
+
 		handler.SuccessResponse(c, &ByCodeResponse{
 			UserName: user.UniqueName,
 			Name:     user.Name,
+			Token:    token,
 		})
 	}
 }
