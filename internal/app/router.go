@@ -17,7 +17,7 @@ import (
 )
 
 func (app *App) initRouter(optSvc *services.OtpService, userSvc *services.UserService) http.Handler {
-	router := gin.New()
+	router := gin.Default()
 
 	gin.DebugPrintRouteFunc = func(httpMethod, absolutePath, handlerName string, nuHandlers int) {
 		log.WithFields(log.Fields{
@@ -30,6 +30,7 @@ func (app *App) initRouter(optSvc *services.OtpService, userSvc *services.UserSe
 
 	router.POST("/login/otp_generate", login.HandleGenerateOtp(optSvc))
 	router.POST("/login/by_code", login.HandleByCode(optSvc, userSvc))
+	router.POST("/login/signup", login.HandleSignUp(userSvc, optSvc))
 
 	return router
 }

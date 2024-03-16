@@ -24,6 +24,7 @@ type ByCodeRequest struct {
 
 type ByCodeResponse struct {
 	UserName string `json:"username"`
+	Name     string `json:"name"`
 	Token    string `json:"token"`
 }
 
@@ -32,6 +33,7 @@ func HandleByCode(otpSvc ByCodeOtpService, userSvc ByCodeUserService) gin.Handle
 		var request ByCodeRequest
 		if err := c.ShouldBindJSON(&request); err != nil {
 			handler.BadRequestResponse(c, err)
+			return
 		}
 
 		ctx := c.Request.Context()
@@ -51,11 +53,19 @@ func HandleByCode(otpSvc ByCodeOtpService, userSvc ByCodeUserService) gin.Handle
 		}
 		user, err := userSvc.GetByEmail(ctx, request.Email)
 		if err != nil {
-			handler.InternalErrorResponse(c)
+			switch {
+			case errors.Is(err, models.ErrUserNotFound):
+				handler.BadRequestResponse(c, models.ErrUserNotFound)
+				return
+			default:
+				handler.InternalErrorResponse(c)
+				return
+			}
 		}
 
 		handler.SuccessResponse(c, &ByCodeResponse{
 			UserName: user.UniqueName,
+			Name:     user.Name,
 		})
 	}
 }

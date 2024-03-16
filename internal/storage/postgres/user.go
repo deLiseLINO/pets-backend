@@ -5,6 +5,8 @@ import (
 	"pets-backend/internal/ent"
 	"pets-backend/internal/ent/user"
 	"pets-backend/internal/models"
+
+	"github.com/google/uuid"
 )
 
 type UserStorage struct {
@@ -14,6 +16,46 @@ type UserStorage struct {
 func NewUserStorage(client *ent.Client) *UserStorage {
 	return &UserStorage{client: client}
 }
+
+func (s *UserStorage) Add(
+	ctx context.Context,
+	username string,
+	name string,
+	email string,
+) (*models.User, error) {
+	usr, err := s.client.User.
+		Create().
+		SetID(uuid.New()).
+		SetUniqueName(username).
+		SetName(name).
+		SetEmail(email).
+		Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return userToModel(usr), nil
+}
+
+// func (s *UserStorage) AddWithPassword(
+// 	ctx context.Context,
+// 	username string,
+// 	name string,
+// 	email string,
+// 	password string,
+// ) error {
+// 	_, err := s.client.User.
+// 		Create().
+// 		SetID(uuid.New()).
+// 		SetUniqueName(username).
+// 		SetName(name).
+// 		SetEmail(email).
+// 		// SetPassword(password).
+// 		Save(ctx)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
 
 func (s *UserStorage) GetByEmail(
 	ctx context.Context,

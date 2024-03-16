@@ -7,6 +7,7 @@ import (
 
 type UserStorate interface {
 	GetByEmail(ctx context.Context, email string) (*models.User, error)
+	Add(ctx context.Context, username string, name string, email string) (*models.User, error)
 }
 
 type UserService struct {
@@ -17,6 +18,10 @@ func NewUserService(userStorage UserStorate) *UserService {
 	return &UserService{
 		UserStorage: userStorage,
 	}
+}
+
+func (s *UserService) Add(ctx context.Context, username string, name string, email string) (*models.User, error) {
+	return s.UserStorage.Add(ctx, username, name, email)
 }
 
 func (s *UserService) GetByEmail(ctx context.Context, email string) (*models.User, error) {
