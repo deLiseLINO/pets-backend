@@ -36,26 +36,26 @@ func (s *UserStorage) Add(
 	return userToModel(usr), nil
 }
 
-// func (s *UserStorage) AddWithPassword(
-// 	ctx context.Context,
-// 	username string,
-// 	name string,
-// 	email string,
-// 	password string,
-// ) error {
-// 	_, err := s.client.User.
-// 		Create().
-// 		SetID(uuid.New()).
-// 		SetUniqueName(username).
-// 		SetName(name).
-// 		SetEmail(email).
-// 		// SetPassword(password).
-// 		Save(ctx)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }
+func (s *UserStorage) AddWithPassword(
+	ctx context.Context,
+	username string,
+	name string,
+	email string,
+	password string,
+) (*models.User, error) {
+	usr, err := s.client.User.
+		Create().
+		SetID(uuid.New()).
+		SetUniqueName(username).
+		SetName(name).
+		SetEmail(email).
+		SetPassword(password).
+		Save(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return userToModel(usr), err
+}
 
 func (s *UserStorage) GetByEmail(
 	ctx context.Context,

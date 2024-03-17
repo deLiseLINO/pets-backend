@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"net/http"
+	"pets-backend/internal/models"
 
 	"github.com/gin-gonic/gin"
 )
@@ -44,4 +45,18 @@ func BadRequestResponse(c *gin.Context, err error) {
 
 func InternalErrorResponse(c *gin.Context) {
 	ErrorResponse(c, http.StatusInternalServerError, ErrInternalServer)
+}
+
+func HandleVerifyCodeError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, models.ErrMismattchCode):
+		BadRequestResponse(c, ErrWrongCodeOrEmail)
+		return
+	case errors.Is(err, models.ErrOTPNotFound):
+		BadRequestResponse(c, ErrWrongCodeOrEmail)
+		return
+	default:
+		InternalErrorResponse(c)
+		return
+	}
 }

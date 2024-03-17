@@ -4,7 +4,8 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type SSOService struct {
@@ -27,9 +28,18 @@ func (s *SSOService) GenerateToken(userid string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenStr, err := token.SignedString([]byte(s.secretKey))
 	if err != nil {
-		logrus.Errorf("failed to generate token %v", err)
+		log.Errorf("failed to generate token %v", err)
 		return "", err
 	}
 
 	return tokenStr, nil
+}
+
+func (s *SSOService) HashPassword(password string) (string, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		log.Errorf("failed to hash password: %v", err)
+		return "", err
+	}
+	return string(hash), nil
 }

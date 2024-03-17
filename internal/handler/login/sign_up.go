@@ -2,7 +2,6 @@ package login
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"pets-backend/internal/handler"
 	"pets-backend/internal/models"
@@ -12,10 +11,15 @@ import (
 
 type SignUpUserService interface {
 	Add(ctx context.Context, username string, name string, email string) (*models.User, error)
+	AddWithPassword(ctx context.Context, username string, name string, email string, password string) (*models.User, error)
 }
 
 type SignUpOtpService interface {
 	VerifyCode(ctx context.Context, email, code string) error
+}
+
+type SignUpSSOService interface {
+	HashPassword(password string) (string, error)
 }
 
 type SignUpRequest struct {
@@ -32,7 +36,7 @@ type SignUpResponse struct {
 	Email    string `json:"email"`
 }
 
-func HandleSignUp(userSvc SignUpUserService, otpSvc SignUpOtpService) gin.HandlerFunc {
+func HandleSignUp(userSvc SignUpUserService, otpSvc SignUpOtpService, ssoSvc SignUpSSOService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var request SignUpRequest
 		if err := c.ShouldBindJSON(&request); err != nil {
@@ -43,25 +47,31 @@ func HandleSignUp(userSvc SignUpUserService, otpSvc SignUpOtpService) gin.Handle
 		ctx := c.Request.Context()
 		err := otpSvc.VerifyCode(ctx, request.Email, request.OtpCode)
 		if err != nil {
-			switch {
-			case errors.Is(err, models.ErrMismattchCode):
-				handler.BadRequestResponse(c, handler.ErrWrongCodeOrEmail)
+			handler.HandleVerifyCodeError(c, err)
+		}
+
+		var user *models.User
+
+		switch request.Password {
+		case "":
+			user, err = userSvc.Add(ctx, request.Username, request.Name, request.Email)
+			if err != nil {
+				// TODO: handle duplicate errors
+				handler.ErrorResponse(c, http.StatusBadRequest, err)
 				return
-			case errors.Is(err, models.ErrOTPNotFound):
-				handler.BadRequestResponse(c, handler.ErrWrongCodeOrEmail)
-				return
-			default:
+			}
+		default:
+			hashedPass, err := ssoSvc.HashPassword(request.Password)
+			if err != nil {
 				handler.InternalErrorResponse(c)
 				return
 			}
-		}
 
-		// TODO: AddWithPassword
-		user, err := userSvc.Add(ctx, request.Username, request.Name, request.Email)
-		if err != nil {
-			// TODO: handle duplicate errors
-			handler.ErrorResponse(c, http.StatusBadRequest, err)
-			return
+			user, err = userSvc.AddWithPassword(ctx, request.Username, request.Name, request.Email, hashedPass)
+			if err != nil {
+				handler.ErrorResponse(c, http.StatusBadRequest, err)
+				return
+			}
 		}
 
 		handler.SuccessResponse(c,

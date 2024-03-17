@@ -34,7 +34,7 @@ func (app *App) initRouter(
 
 	router.POST("/login/otp_generate", login.HandleGenerateOtp(optSvc))
 	router.POST("/login/by_code", login.HandleByCode(optSvc, userSvc, ssoSvc))
-	router.POST("/login/signup", login.HandleSignUp(userSvc, optSvc))
+	router.POST("/login/signup", login.HandleSignUp(userSvc, optSvc, ssoSvc))
 
 	return router
 }

@@ -8,6 +8,7 @@ import (
 type UserStorate interface {
 	GetByEmail(ctx context.Context, email string) (*models.User, error)
 	Add(ctx context.Context, username string, name string, email string) (*models.User, error)
+	AddWithPassword(ctx context.Context, username string, name string, email string, password string) (*models.User, error)
 }
 
 type UserService struct {
@@ -22,6 +23,16 @@ func NewUserService(userStorage UserStorate) *UserService {
 
 func (s *UserService) Add(ctx context.Context, username string, name string, email string) (*models.User, error) {
 	return s.UserStorage.Add(ctx, username, name, email)
+}
+
+func (s *UserService) AddWithPassword(
+	ctx context.Context,
+	username string,
+	name string,
+	email string,
+	password string,
+) (*models.User, error) {
+	return s.UserStorage.AddWithPassword(ctx, username, name, email, password)
 }
 
 func (s *UserService) GetByEmail(ctx context.Context, email string) (*models.User, error) {
