@@ -9,14 +9,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+//go:generate mockgen -destination=./mocks/by_code_mock.go -source=by_code.go
 type ByCodeOtpService interface {
 	VerifyCode(ctx context.Context, email, code string) error
 }
 
+//go:generate mockgen -destination=./mocks/by_code_mock.go -source=by_code.go
 type ByCodeUserService interface {
 	GetByEmail(ctx context.Context, email string) (*models.User, error)
 }
 
+//go:generate mockgen -destination=./mocks/by_code_mock.go -source=by_code.go
 type ByCodeSSOService interface {
 	GenerateToken(userID string) (string, error)
 }
